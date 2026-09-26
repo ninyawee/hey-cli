@@ -6059,7 +6059,7 @@
     },
     "/entries/{entryId}/replies.json": {
       "post": {
-        "description": "Reply to an entry. A delivered reply answers the sent message; one saved as a draft\n(entry.status \"drafted\") answers 204 with no body: the draft's id is in the Location\nheader, which names /messages/{entry_id}. The Go, Rust, Kotlin and Swift reply-draft\nconveniences read it from there; a direct caller reads that header rather than a body.",
+        "description": "Reply to an entry. A delivered reply answers the sent message; one saved as a draft\n(entry.status \"drafted\") answers 204 with no body: the draft's id is in the Location\nheader, which names /messages/{entry_id}. The Go, Rust, Kotlin and Swift reply-draft\nconveniences read it from there; a direct caller reads that header rather than a body.\nA success whose body is empty or does not decode is an empty result, not an error\n(heyLenientSuccess).",
         "operationId": "CreateReply",
         "requestBody": {
           "content": {
@@ -6147,6 +6147,7 @@
         "tags": [
           "Entries"
         ],
+        "x-hey-lenient-success": {},
         "x-hey-retry": {
           "maxAttempts": 2,
           "baseDelayMs": 1000,
@@ -6748,7 +6749,7 @@
     },
     "/messages.json": {
       "post": {
-        "description": "Create a new message (start a new topic).\nThe acting sender ID must be included; the Go SDK resolves this automatically.\nEvery message is created drafted on HEY's side; without entry.status the server\ndelivers it and answers the sent message, while entry.status \"drafted\" leaves it as a\ndraft and answers 204 with no body: the draft's id is in the Location header, which\nnames /messages/{entry_id}. The Go, Rust, Kotlin and Swift draft conveniences read it\nfrom there; a direct caller reads that header rather than a body.",
+        "description": "Create a new message (start a new topic).\nThe acting sender ID must be included; the Go SDK resolves this automatically.\nEvery message is created drafted on HEY's side; without entry.status the server\ndelivers it and answers the sent message, while entry.status \"drafted\" leaves it as a\ndraft and answers 204 with no body: the draft's id is in the Location header, which\nnames /messages/{entry_id}. The Go, Rust, Kotlin and Swift draft conveniences read it\nfrom there; a direct caller reads that header rather than a body. A success whose body\nis empty or does not decode — that 204, or a delivery whose answer is unreadable — is an\nempty result, not an error (heyLenientSuccess).",
         "operationId": "CreateMessage",
         "requestBody": {
           "content": {
@@ -6815,6 +6816,7 @@
         "tags": [
           "Messages"
         ],
+        "x-hey-lenient-success": {},
         "x-hey-retry": {
           "maxAttempts": 2,
           "baseDelayMs": 1000,
@@ -6907,7 +6909,7 @@
         }
       },
       "put": {
-        "description": "Revise a message entry (MessagesController#update). With entry.status \"drafted\" the\nentry is saved as a draft (204 + Location, like CreateMessage, and no body); without\nit a draft is delivered through the undo-delay window and HEY answers the sent\nmessage. A trashed draft is silently restored first.\nThe revision is not a patch: subject, content and any scheduled delivery are rewritten\nfrom this request (an omitted scheduled delivery clears one), while recipients are\nreplaced only when entry.addressed is present.\n\nNot naturally idempotent despite the PUT: without the drafted status this request\n*delivers*, so a transparent retry after an ambiguous first attempt could send the\nmessage again. The client must not retry it.",
+        "description": "Revise a message entry (MessagesController#update). With entry.status \"drafted\" the\nentry is saved as a draft (204 + Location, like CreateMessage, and no body); without\nit a draft is delivered through the undo-delay window and HEY answers the sent\nmessage; a success whose body is empty or does not decode is an empty result, not an\nerror (heyLenientSuccess). A trashed draft is silently restored first.\nThe revision is not a patch: subject, content and any scheduled delivery are rewritten\nfrom this request (an omitted scheduled delivery clears one), while recipients are\nreplaced only when entry.addressed is present.\n\nNot naturally idempotent despite the PUT: without the drafted status this request\n*delivers*, so a transparent retry after an ambiguous first attempt could send the\nmessage again. The client must not retry it.",
         "operationId": "UpdateMessage",
         "requestBody": {
           "content": {
@@ -6998,6 +7000,7 @@
         "x-hey-idempotent": {
           "natural": false
         },
+        "x-hey-lenient-success": {},
         "x-hey-retry": {
           "maxAttempts": 2,
           "baseDelayMs": 1000,
