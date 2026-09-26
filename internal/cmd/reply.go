@@ -54,7 +54,7 @@ values add or move recipients on those lines; each value can also be comma-separ
 --replace-recipients uses only the explicitly supplied recipients instead. A dry run
 resolves and prints the complete envelope without requiring a message or sending one.`,
 		Annotations: map[string]string{
-			"agent_notes": "Replies to the latest entry in a thread, addressed the way HEY addresses a reply: everyone that entry was addressed to, plus its sender on the To line, minus the acting user's own addresses. Repeatable --to/--cc/--bcc flags merge explicit recipients into that prefill; --replace-recipients uses only the explicit lists. --dry-run is read-only, needs no message, and returns the resolved sender, recipients, subject, account, thread and entry. Accepts message via -m, stdin, or $EDITOR, plus repeatable --attach files; an attachment can be sent without body text. The message is Markdown; use --message-html to send raw HTML instead. --draft saves the reply as a draft, carries the resolved recipients, and answers the draft ID for hey draft show/edit/send/delete.",
+			"agent_notes": "Replies to the latest entry in a thread, addressed the way HEY addresses a reply: everyone that entry was addressed to, plus its sender on the To line, minus the acting user's own addresses. Repeatable --to/--cc/--bcc flags merge explicit recipients into that prefill; --replace-recipients uses only the explicit lists. --dry-run is read-only, needs no message, and returns the resolved sender, recipients, subject, account, thread and entry. Accepts message via -m, stdin, or $EDITOR, plus repeatable --attach files; an attachment can be sent without body text. The message is Markdown; use --message-html to send raw HTML instead. --draft saves the reply as a draft, carries the resolved recipients, and answers the draft ID for hey draft show/edit/send/delete. A send answers the reply's id and the topic_id of the thread it landed on — a new thread when HEY breaks the reply out of this one — once HEY serves them.",
 		},
 		Example: `  hey reply 12345 -m "Friday works for me — I'll send an agenda."
   hey reply 12345 --to support@example.com -m "The replacement is on the way."
@@ -163,17 +163,12 @@ func (c *replyCommand) run(cmd *cobra.Command, args []string) error {
 		}
 		return writeDraftSaved(cmd, draftID, len(c.attachments))
 	}
-	if err = replySDK.Entries().CreateReply(ctx, target.EntryID, target.ActingSenderID, target.Subject, message, target.Addressed.To, target.Addressed.CC, target.Addressed.BCC); err != nil {
+	sent, err := replySDK.Entries().CreateReply(ctx, target.EntryID, target.ActingSenderID, target.Subject, message, target.Addressed.To, target.Addressed.CC, target.Addressed.BCC)
+	if err != nil {
 		return apierr.FromSDK(err)
 	}
-
-	return writeMutation(cmd, sentWithAttachmentsSummary("Reply sent", len(c.attachments)), nil,
-		output.WithBreadcrumbs(output.Breadcrumb{
-			Action:      "view",
-			Command:     fmt.Sprintf("hey thread read %d", threadID),
-			Description: "View the full thread",
-		}),
-	)
+	summary := sentWithAttachmentsSummary("Reply sent", len(c.attachments))
+	return writeMessageSent(cmd, messageSent{line: summary, summary: summary, thread: threadID}, sent)
 }
 
 func parseReplyAddresses(values []string) []string {

@@ -25,7 +25,7 @@ func newForwardCommand() *forwardCommand {
 		Use:   "forward <thread-id>",
 		Short: "Forward the latest message in a thread",
 		Annotations: map[string]string{
-			"agent_notes": "Forwards the latest entry in a thread with HEY's quoted content. Accepts comma-separated recipients and an optional note via -m.",
+			"agent_notes": "Forwards the latest entry in a thread with HEY's quoted content. Accepts comma-separated recipients and an optional note via -m. The answer's thread_id and entry_id name what was forwarded; id and topic_id name the new message and the thread it started, once HEY serves them.",
 		},
 		Example: `  hey forward 12345 --to alice@example.com
   hey forward 12345 --to alice@example.com --cc bob@example.org -m "For your review"`,
@@ -87,16 +87,23 @@ func (c *forwardCommand) run(cmd *cobra.Command, args []string) error {
 		note = htmlutil.FromMarkdown(c.message)
 	}
 	content := htmlutil.PrependHTML(draft.Content, note)
-	if err := forwardSDK.Messages().Create(ctx, draft.Subject, content, to, cc, bcc); err != nil {
+	sent, err := forwardSDK.Messages().Create(ctx, draft.Subject, content, to, cc, bcc)
+	if err != nil {
 		return apierr.FromSDK(err)
 	}
 
-	return writeMutation(cmd, "Message forwarded", map[string]any{
-		"thread_id": threadID,
-		"entry_id":  entryID,
-		"subject":   draft.Subject,
-		"to":        to,
-		"cc":        cc,
-		"bcc":       bcc,
-	})
+	// thread_id and entry_id name what was forwarded; id and topic_id, once HEY serves them,
+	// name the message that went out and the thread it started.
+	return writeMessageSent(cmd, messageSent{
+		line:    "Message forwarded",
+		summary: "Message forwarded",
+		reported: map[string]any{
+			"thread_id": threadID,
+			"entry_id":  entryID,
+			"subject":   draft.Subject,
+			"to":        to,
+			"cc":        cc,
+			"bcc":       bcc,
+		},
+	}, sent)
 }
