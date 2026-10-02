@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "HEY",
-    "version": "2026-09-16",
+    "version": "2026-09-20",
     "description": "HEY API",
     "contact": {
       "name": "Basecamp",
@@ -342,16 +342,16 @@
     },
     "/autocompletable/contacts/addressable.json": {
       "get": {
-        "description": "The recipients HEY suggests in a composer's To, Cc and Bcc fields: the\ncontacts the identity recently addressed, then every other contact by name,\nthen \"Everyone at …\" for each active account with a domain, then the\nidentity's contact groups. Order is HEY's and is meaningful.\n\nEach row is a bare array of strings, `[value, label]` or\n`[value, label, detail]`: `value` is one address for a contact, or the\ncomma-joined addresses of an account's people or a group's members; `label`\nis the name to show (the address itself when there is no name); `detail` is\n\"@domain\" for an account and \"Contact group with N people\" for a group.",
+        "description": "The recipients HEY suggests in a composer's To, Cc and Bcc fields: the\ncontacts the identity recently addressed, then every other contact by name,\nthen \"Everyone at …\" for each active account with a domain, then the\nidentity's contact groups. Order is HEY's and is meaningful.\n\nEach row is a bare array of strings, `[value, label]` or\n`[value, label, detail]`: `value` is one address for a contact, or the\ncomma-joined addresses of an account's people or a group's members; `label`\nis the name to show (the address itself when there is no name); `detail` is\n\"@domain\" for an account and \"Contact group with N people\" for a group.\nAn account with nobody but the identity on it (unless `include_self` is\ntrue) and a group with no members still get a row, with an empty `value`.",
         "operationId": "ListAddressableContacts",
         "parameters": [
           {
             "name": "include_self",
             "in": "query",
-            "description": "true includes the identity's own addresses, as the web composer asks;\nanything else leaves them out.",
+            "description": "true includes the identity's own addresses, as the web composer asks.\nAnything else leaves them out, except an address of its own the\nidentity recently wrote to, which the recent contacts still carry.",
             "schema": {
               "type": "boolean",
-              "description": "true includes the identity's own addresses, as the web composer asks;\nanything else leaves them out.",
+              "description": "true includes the identity's own addresses, as the web composer asks.\nAnything else leaves them out, except an address of its own the\nidentity recently wrote to, which the recent contacts still carry.",
               "x-go-type-skip-optional-pointer": false
             }
           }
@@ -12265,6 +12265,16 @@
             },
             "x-omitzero": true
           },
+          "active_at": {
+            "type": "string",
+            "description": "Delivery time. Present on the latest entry in Sent topics.",
+            "format": "date-time",
+            "x-go-type": "time.Time",
+            "x-go-type-import": {
+              "path": "time"
+            },
+            "x-omitzero": true
+          },
           "creator": {
             "$ref": "#/components/schemas/Contact"
           },
@@ -12286,6 +12296,9 @@
           "topic_id": {
             "type": "integer",
             "format": "int64"
+          },
+          "addressed": {
+            "$ref": "#/components/schemas/Addressed"
           }
         },
         "required": [
